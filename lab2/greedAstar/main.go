@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"container/heap"
 	"fmt"
 	"math"
 	"os"
@@ -10,115 +9,88 @@ import (
 )
 
 type Edge struct {
-	node   string
+	dest   string
 	weight float64
 }
 
-type Item struct {
-	path      []string
+type Node struct {
+	name      string
 	cost      float64
 	heuristic float64
-	index     int
+	path      []string
 }
 
-type PriorityQueue []*Item
-
-func (pq PriorityQueue) Len() int { return len(pq) }
-
-func (pq PriorityQueue) Less(i, j int) bool {
-	return pq[i].cost+pq[i].heuristic < pq[j].cost+pq[j].heuristic
+func heuristic(current, end string) float64 {
+	return math.Abs(float64(current[0]) - float64(end[0]))
 }
 
-func (pq PriorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
-}
-
-func (pq *PriorityQueue) Push(x any) {
-	n := len(*pq)
-	item := x.(*Item)
-	item.index = n
-	*pq = append(*pq, item)
-}
-
-func (pq *PriorityQueue) Pop() any {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	item.index = -1
-	*pq = old[0 : n-1]
-	return item
-}
-
-func heuristic(node, goal string) float64 {
-	return math.Abs(float64(node[0] - goal[0]))
-}
-
-func aStar(graph map[string]map[string]float64, start, end string) []string {
-	pq := &PriorityQueue{}
-	heap.Init(pq)
-	heap.Push(pq, &Item{path: []string{start}, cost: 0, heuristic: heuristic(start, end)})
-
+func aStar(graph map[string][]Edge, start, end string) []string {
+	openSet := []Node{{name: start, cost: 0, heuristic: heuristic(start, end), path: []string{start}}}
 	visited := make(map[string]float64)
 
-	for pq.Len() > 0 {
-		current := heap.Pop(pq).(*Item)
-		currentNode := current.path[len(current.path)-1]
+	for len(openSet) > 0 {
+		bestIdx := 0
+		for i, node := range openSet {
+			if node.cost+node.heuristic < openSet[bestIdx].cost+openSet[bestIdx].heuristic {
+				bestIdx = i
+			}
+		}
 
-		if currentNode == end {
+		current := openSet[bestIdx]
+		openSet = append(openSet[:bestIdx], openSet[bestIdx+1:]...)
+
+		if current.name == end {
 			return current.path
 		}
 
-		if val, exists := visited[currentNode]; exists && val <= current.cost {
-			continue
-		}
-		visited[currentNode] = current.cost
+		visited[current.name] = current.cost
 
-		for neighbor, weight := range graph[currentNode] {
-			newCost := current.cost + weight
+		for _, edge := range graph[current.name] {
+			newCost := current.cost + edge.weight
+			if oldCost, seen := visited[edge.dest]; seen && newCost >= oldCost {
+				continue
+			}
+
 			newPath := append([]string{}, current.path...)
-			newPath = append(newPath, neighbor)
-			heap.Push(pq, &Item{path: newPath, cost: newCost, heuristic: heuristic(neighbor, end)})
+			newPath = append(newPath, edge.dest)
+			openSet = append(openSet, Node{
+				name:      edge.dest,
+				cost:      newCost,
+				heuristic: heuristic(edge.dest, end),
+				path:      newPath,
+			})
 		}
 	}
 
 	return nil
 }
 
-func readGraph() map[string]map[string]float64 {
-	graph := make(map[string]map[string]float64)
+func readGraph() (map[string][]Edge, string, string) {
+	graph := make(map[string][]Edge)
 	scanner := bufio.NewScanner(os.Stdin)
 
-	for scanner.Scan() {
-		inputString := scanner.Text()
-		if inputString == "" {
-			break
-		}
-
-		parts := strings.Split(inputString, " ")
-		startVertex, endVertex := parts[0], parts[1]
-		var weight float64
-		fmt.Sscanf(parts[2], "%f", &weight)
-
-		if _, exists := graph[startVertex]; !exists {
-			graph[startVertex] = make(map[string]float64)
-		}
-		graph[startVertex][endVertex] = weight
+	var start, end string
+	if scanner.Scan() {
+		fmt.Sscanf(scanner.Text(), "%s %s", &start, &end)
 	}
 
-	return graph
+	for scanner.Scan() {
+		parts := strings.Fields(scanner.Text())
+		if len(parts) < 3 {
+			continue
+		}
+
+		var weight float64
+		fmt.Sscanf(parts[2], "%f", &weight)
+		graph[parts[0]] = append(graph[parts[0]], Edge{dest: parts[1], weight: weight})
+	}
+
+	return graph, start, end
 }
 
 func main() {
-	var start, end string
-	fmt.Scanf("%s %s\n", &start, &end)
-	graph := readGraph()
-
+	graph, start, end := readGraph()
 	path := aStar(graph, start, end)
-	if path != nil {
-		fmt.Println(strings.Join(path, ""))
-	} else {
-		fmt.Println("No path found")
-	}
+
+	fmt.Println(strings.Join(path, ""))
 }
