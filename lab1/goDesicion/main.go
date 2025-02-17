@@ -2,29 +2,25 @@ package main
 
 import (
 	"fmt"
-	"time"
 )
 
 type Square struct {
-	x, y, w int
+	x, y, w int // Координаты (x, y) и размер квадрата (w)
 }
 
 type Board struct {
-	size          int
-	tempX, tempY  int
-	minSquares    int
-	curSquareSize int
-	countSquares  int
-	board         [][]int
-	bestBoard     [][]int
-	squares       []Square
-	bestSolution  []Square
-
-	// Счётчики для времени и операций
-	operationsCount int
-	startTime       time.Time
+	size          int      // Размер игрового поля
+	tempX, tempY  int      // Временные координаты для размещения квадратов
+	minSquares    int      // Минимальное количество квадратов, необходимых для покрытия поля
+	curSquareSize int      // Текущий размер квадрата
+	countSquares  int      // Количество размещенных квадратов
+	board         [][]int  // Игровое поле (матрица)
+	bestBoard     [][]int  // Лучшее игровое поле (для хранения решения)
+	squares       []Square // Список всех размещенных квадратов
+	bestSolution  []Square // Лучшее решение (список квадратов)
 }
 
+// Конструктор для создания нового игрового поля.
 func NewBoard(size int) *Board {
 	board := make([][]int, size)
 	for i := 0; i < size; i++ {
@@ -32,16 +28,16 @@ func NewBoard(size int) *Board {
 	}
 
 	return &Board{
-		board:           board,
-		size:            size,
-		squares:         []Square{},
-		bestSolution:    []Square{},
-		countSquares:    0,
-		minSquares:      size * size,
-		operationsCount: 0, // Инициализируем счётчик операций
+		board:        board,
+		size:         size,
+		squares:      []Square{},
+		bestSolution: []Square{},
+		countSquares: 0,
+		minSquares:   size * size,
 	}
 }
 
+// создаются три начальных квадрата, каждый из которых имеет определённый размер и положение на поле.
 func (b *Board) initializeBoard() {
 	halfSize := b.size / 2
 	for i := 0; i < b.size; i++ {
@@ -67,25 +63,41 @@ func (b *Board) initializeBoard() {
 	b.tempY = halfSize
 }
 
+// Функция isBoardFull проверяет, заполнилось ли игровое поле
+// (или если есть место для добавления новых квадратов),
+// и пытается добавить новые квадраты в свободные участки поля.
 func (b *Board) isBoardFull() bool {
+	// Здесь происходит проверка, если curSquareSize (текущий размер квадрата) равен 0.
+	// Это может быть на самом начале или после удаления квадрата.
+	// Если так, то устанавливается размер квадрата как половина размера поля (b.size / 2).
 	if b.curSquareSize == 0 {
 		b.curSquareSize = b.size / 2
 	}
 
+	// Поиск свободных клеток на поле
 	for i := b.size / 2; i < b.size; i++ {
 		for j := b.size / 2; j < b.size; j++ {
 			if b.board[i][j] == 0 {
 				b.tempY = i
 				b.tempX = j
 
+				// Здесь проверяется, не превышает ли количество уже размещенных
+				// квадратов (значение b.countSquares) минимальное количество квадратов
 				if b.countSquares >= b.minSquares {
 					return false
 				}
 
+				// В этом блоке кода происходит попытка разместить новый квадрат
 				for {
+					// Если добавление нового квадрата прошло успешно (функция newSquare возвращает true),
+					// то размер следующего квадрата сбрасывается обратно на половину размера поля (b.size / 2),
+					// и цикл прерывается с помощью break.
 					if b.newSquare() {
 						b.curSquareSize = b.size / 2
 						break
+						// Если квадрат не удалось разместить (функция newSquare возвращает false),
+						// то размер текущего квадрата уменьшается на 1 (b.curSquareSize--),
+						// и программа пытается снова разместить квадрат меньшего размера.
 					} else {
 						b.curSquareSize--
 					}
@@ -97,11 +109,17 @@ func (b *Board) isBoardFull() bool {
 	return true
 }
 
+// Функция newSquare пытается разместить новый квадрат на поле.
+// Она проверяет, можно ли разместить квадрат в выбранном месте (с учетом размеров поля и уже занятых клеток).
+// Если все проверки проходят успешно, квадрат размещается, а информация о нем сохраняется в массиве.
+// Если разместить квадрат не удается, функция возвращает false.
 func (b *Board) newSquare() bool {
+	// Проверка, вмещается ли квадрат в поле
 	if b.tempX+b.curSquareSize > b.size || b.tempY+b.curSquareSize > b.size {
 		return false
 	}
 
+	// Проверка свободных клеток для квадрата
 	for i := b.tempY; i < b.tempY+b.curSquareSize; i++ {
 		for j := b.tempX; j < b.tempX+b.curSquareSize; j++ {
 			if b.board[i][j] != 0 {
@@ -110,6 +128,7 @@ func (b *Board) newSquare() bool {
 		}
 	}
 
+	// Размещение квадрата на поле
 	b.countSquares++
 	for i := b.tempY; i < b.tempY+b.curSquareSize; i++ {
 		for j := b.tempX; j < b.tempX+b.curSquareSize; j++ {
@@ -117,17 +136,19 @@ func (b *Board) newSquare() bool {
 		}
 	}
 
+	// Добавление квадрата в список
 	b.squares = append(b.squares, Square{b.tempX, b.tempY, b.curSquareSize})
-
-	// Увеличиваем счётчик операций
-	b.operationsCount++
 
 	return true
 }
 
 func (b *Board) backtrace() bool {
+	// Получение последнего квадрата
 	lastSquare := b.squares[len(b.squares)-1]
 
+	// Проверка на условия отката
+	// Длина списка квадратов b.squares должна быть больше 3 (то есть есть хотя бы 4 квадрата на поле).
+	// Размер последнего квадрата (lastSquare.w) должен быть равен 1.
 	for len(b.squares) > 3 && lastSquare.w == 1 {
 		b.deleteSquare(b.squares[len(b.squares)-1].x, b.squares[len(b.squares)-1].y, b.squares[len(b.squares)-1].w)
 		lastSquare = b.squares[len(b.squares)-1]
@@ -140,9 +161,6 @@ func (b *Board) backtrace() bool {
 	b.deleteSquare(b.squares[len(b.squares)-1].x, b.squares[len(b.squares)-1].y, b.squares[len(b.squares)-1].w)
 	b.curSquareSize = lastSquare.w - 1
 
-	// Увеличиваем счётчик операций
-	b.operationsCount++
-
 	return true
 }
 
@@ -154,9 +172,6 @@ func (b *Board) canDeleteSquare(x, y, w int) bool {
 	if len(b.squares) == 0 {
 		return false
 	}
-
-	// Увеличиваем счётчик операций
-	b.operationsCount++
 
 	return true
 }
@@ -174,9 +189,6 @@ func (b *Board) deleteSquare(x, y, w int) {
 
 	b.squares = b.squares[:len(b.squares)-1]
 	b.countSquares--
-
-	// Увеличиваем счётчик операций
-	b.operationsCount++
 }
 
 func (b *Board) calculations() {
@@ -204,9 +216,6 @@ func (b *Board) calculations() {
 			break
 		}
 	}
-
-	// Увеличиваем счётчик операций
-	b.operationsCount++
 }
 
 func (b *Board) printCoords() {
@@ -217,15 +226,9 @@ func (b *Board) printCoords() {
 		b.bestSolution = b.bestSolution[:len(b.bestSolution)-1]
 		fmt.Printf("%d %d %d\n", temp.x+1, temp.y+1, temp.w)
 	}
-
-	// Увеличиваем счётчик операций
-	b.operationsCount++
 }
 
 func (b *Board) process() {
-	startTime := time.Now() // Начинаем отсчёт времени
-	b.startTime = startTime
-
 	switch {
 	case b.size%2 == 0:
 		fmt.Println("4")
@@ -235,9 +238,6 @@ func (b *Board) process() {
 		fmt.Printf("%d 1 %d\n", part+1, part)
 		fmt.Printf("1 %d %d\n", part+1, part)
 		fmt.Printf("%d %d %d\n", part+1, part+1, part)
-		elapsedTime := time.Since(startTime)
-		fmt.Printf("Время работы: %.8f сек.\n", elapsedTime.Seconds())
-		fmt.Printf("Количество операций: %d\n", b.operationsCount)
 		return
 	case b.size%3 == 0:
 		fmt.Println("6")
@@ -268,11 +268,6 @@ func (b *Board) process() {
 		b.calculations()
 		b.printCoords()
 	}
-
-	// Выводим количество операций и время работы
-	elapsedTime := time.Since(startTime)
-	fmt.Printf("Время работы: %.8f сек.\n", elapsedTime.Seconds())
-	fmt.Printf("Количество операций: %d\n", b.operationsCount)
 }
 
 func main() {
