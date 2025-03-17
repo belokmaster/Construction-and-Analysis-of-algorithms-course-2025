@@ -16,10 +16,10 @@ type Edge struct {
 func greedyAlg(graph map[string]map[string]float64, start, end string) ([]string, int) {
 	queue := [][]string{{start}}
 	visited := make(map[string]bool)
-	operations := 0 // Счётчик операций
+	operations := 0
 
 	for len(queue) > 0 {
-		operations++ // Операция извлечения пути из очереди
+		operations++
 		currentPath := queue[len(queue)-1]
 		queue = queue[:len(queue)-1]
 		currentNode := currentPath[len(currentPath)-1]
@@ -29,11 +29,11 @@ func greedyAlg(graph map[string]map[string]float64, start, end string) ([]string
 		}
 
 		for node := range graph[currentNode] {
-			operations++ // Операция обхода рёбер
+			operations++
 			if !visited[node] {
-				queue = append(queue, currentPath) // Операция добавления в очередь
+				queue = append(queue, currentPath)
 				newPath := append(currentPath, node)
-				queue = append(queue, newPath) // Операция добавления нового пути в очередь
+				queue = append(queue, newPath)
 
 				visited[node] = true
 				break

@@ -2,11 +2,6 @@ package main
 
 import "math"
 
-type Path struct {
-	cities   []int
-	distance int
-}
-
 func GreedyTSP(matrix [][]int, start int) Path {
 	n := len(matrix)
 	visited := make([]bool, n)
