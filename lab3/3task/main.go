@@ -14,34 +14,6 @@ var (
 	bestCost = INF
 )
 
-func main() {
-	fmt.Scan(&N)
-	matrix = make([][]float64, N)
-	for i := 0; i < N; i++ {
-		matrix[i] = make([]float64, N)
-		for j := 0; j < N; j++ {
-			fmt.Scan(&matrix[i][j])
-		}
-	}
-
-	path := make([]int, 0, N)
-	visited := make([]bool, N)
-	path = append(path, 0)
-	visited[0] = true
-
-	branchAndBound(path, visited, 0)
-
-	for i, city := range bestPath {
-		if i > 0 {
-			fmt.Print(" ")
-		}
-		fmt.Print(city)
-	}
-
-	fmt.Println()
-	fmt.Printf("%.1f\n", bestCost)
-}
-
 func branchAndBound(path []int, visited []bool, currentCost float64) {
 	if len(path) == N {
 		if matrix[path[len(path)-1]][path[0]] == -1 {
@@ -74,4 +46,32 @@ func branchAndBound(path []int, visited []bool, currentCost float64) {
 			path = path[:len(path)-1]
 		}
 	}
+}
+
+func main() {
+	fmt.Scan(&N)
+	matrix = make([][]float64, N)
+	for i := 0; i < N; i++ {
+		matrix[i] = make([]float64, N)
+		for j := 0; j < N; j++ {
+			fmt.Scan(&matrix[i][j])
+		}
+	}
+
+	path := make([]int, 0, N)
+	visited := make([]bool, N)
+	path = append(path, 0)
+	visited[0] = true
+
+	branchAndBound(path, visited, 0)
+
+	for i, city := range bestPath {
+		if i > 0 {
+			fmt.Print(" ")
+		}
+		fmt.Print(city)
+	}
+
+	fmt.Println()
+	fmt.Printf("%.1f\n", bestCost)
 }

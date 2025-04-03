@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 )
 
 type Edge struct {
@@ -13,23 +12,20 @@ type Edge struct {
 	weight float64
 }
 
-func greedyAlg(graph map[string]map[string]float64, start, end string) ([]string, int) {
+func greedyAlg(graph map[string]map[string]float64, start, end string) []string {
 	queue := [][]string{{start}}
 	visited := make(map[string]bool)
-	operations := 0
 
 	for len(queue) > 0 {
-		operations++
 		currentPath := queue[len(queue)-1]
 		queue = queue[:len(queue)-1]
 		currentNode := currentPath[len(currentPath)-1]
 
 		if currentNode == end {
-			return currentPath, operations
+			return currentPath
 		}
 
 		for node := range graph[currentNode] {
-			operations++
 			if !visited[node] {
 				queue = append(queue, currentPath)
 				newPath := append(currentPath, node)
@@ -41,7 +37,7 @@ func greedyAlg(graph map[string]map[string]float64, start, end string) ([]string
 		}
 	}
 
-	return nil, operations
+	return nil
 }
 
 func readGraph() map[string]map[string]float64 {
@@ -99,15 +95,8 @@ func main() {
 	var start, end string
 	fmt.Scanf("%s %s\n", &start, &end)
 
-	startTime := time.Now()
-
 	graph := readGraph()
 
-	path, operations := greedyAlg(graph, start, end)
-
-	duration := time.Since(startTime)
-
-	fmt.Println("Path:", strings.Join(path, ""))
-	fmt.Println("Operations:", operations)
-	fmt.Printf("Execution Time: %s\n", duration)
+	path := greedyAlg(graph, start, end)
+	fmt.Println(strings.Join(path, ""))
 }
