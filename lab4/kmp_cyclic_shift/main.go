@@ -67,11 +67,6 @@ func main() {
 	a = strings.TrimSpace(a)
 	b = strings.TrimSpace(b)
 
-	if len(a) != len(b) {
-		fmt.Println(-1)
-		return
-	}
-
 	result := isCyclicShift(b, a)
 	fmt.Println(result)
 }

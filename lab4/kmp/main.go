@@ -26,7 +26,7 @@ func prefixFunction(s string) []int {
 	return p
 }
 
-func kmpSearch(text, pattern string) []int {
+func kmp(text, pattern string) []int {
 	var result []int
 	combined := pattern + "@" + text
 	p := prefixFunction(combined)
@@ -49,7 +49,12 @@ func main() {
 	pattern = strings.TrimSpace(pattern)
 	text = strings.TrimSpace(text)
 
-	indices := kmpSearch(text, pattern)
+	if pattern == "" {
+		fmt.Println(-1)
+		return
+	}
+
+	indices := kmp(text, pattern)
 
 	if len(indices) > 0 {
 		fmt.Print(indices[0])
