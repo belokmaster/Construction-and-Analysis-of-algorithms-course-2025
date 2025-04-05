@@ -26,21 +26,6 @@ func prefixFunction(s string) []int {
 	return p
 }
 
-func kmpSearch(text, pattern string) []int {
-	var result []int
-	combined := pattern + "@" + text
-	p := prefixFunction(combined)
-	patternLen := len(pattern)
-
-	for i, v := range p {
-		if v == patternLen {
-			result = append(result, i-patternLen*2)
-		}
-	}
-
-	return result
-}
-
 func isCyclicShift(sample, text string) int {
 	if len(sample) != len(text) {
 		return -1
@@ -60,7 +45,6 @@ func isCyclicShift(sample, text string) int {
 			if patternIndex == len(sample) {
 				return textInd - len(sample) + 1
 			}
-
 			continue
 		}
 
