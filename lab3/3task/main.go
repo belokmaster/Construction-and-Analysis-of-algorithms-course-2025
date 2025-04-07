@@ -5,26 +5,17 @@ import (
 	"math"
 )
 
-const INF = math.MaxFloat64
-
-var (
-	N        int
-	matrix   [][]float64
-	bestPath []int
-	bestCost = INF
-)
-
-func branchAndBound(path []int, visited []bool, currentCost float64) {
+func branchAndBound(path []int, visited []bool, currentCost float64, N int, matrix [][]float64, bestCost *float64, bestPath *[]int) {
 	if len(path) == N {
 		if matrix[path[len(path)-1]][path[0]] == -1 {
 			return
 		}
 
 		totalCost := currentCost + matrix[path[len(path)-1]][path[0]]
-		if totalCost < bestCost {
-			bestCost = totalCost
-			bestPath = make([]int, len(path))
-			copy(bestPath, path)
+		if totalCost < *bestCost {
+			*bestCost = totalCost
+			*bestPath = make([]int, len(path))
+			copy(*bestPath, path)
 		}
 
 		return
@@ -33,14 +24,14 @@ func branchAndBound(path []int, visited []bool, currentCost float64) {
 	for nextCity := 0; nextCity < N; nextCity++ {
 		if !visited[nextCity] && matrix[path[len(path)-1]][nextCity] != -1 {
 			lowerBound := currentCost + matrix[path[len(path)-1]][nextCity]
-			if lowerBound >= bestCost {
+			if lowerBound >= *bestCost {
 				continue
 			}
 
 			visited[nextCity] = true
 			path = append(path, nextCity)
 
-			branchAndBound(path, visited, lowerBound)
+			branchAndBound(path, visited, lowerBound, N, matrix, bestCost, bestPath)
 
 			visited[nextCity] = false
 			path = path[:len(path)-1]
@@ -49,8 +40,10 @@ func branchAndBound(path []int, visited []bool, currentCost float64) {
 }
 
 func main() {
+	var N int
 	fmt.Scan(&N)
-	matrix = make([][]float64, N)
+
+	matrix := make([][]float64, N)
 	for i := 0; i < N; i++ {
 		matrix[i] = make([]float64, N)
 		for j := 0; j < N; j++ {
@@ -58,12 +51,15 @@ func main() {
 		}
 	}
 
+	bestCost := math.MaxFloat64
+	var bestPath []int
+
 	path := make([]int, 0, N)
 	visited := make([]bool, N)
 	path = append(path, 0)
 	visited[0] = true
 
-	branchAndBound(path, visited, 0)
+	branchAndBound(path, visited, 0, N, matrix, &bestCost, &bestPath)
 
 	for i, city := range bestPath {
 		if i > 0 {
