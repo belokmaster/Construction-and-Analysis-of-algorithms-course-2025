@@ -4,46 +4,166 @@
     <meta charset="UTF-8">
     <title>KMP Algorithm Visualization</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .controls { margin-bottom: 20px; }
-        canvas { border: 1px solid #ccc; }
-        #status { margin-top: 10px; }
-        #speed-label { margin-left: 10px; }
-        .step-controls { margin-top: 10px; }
-        #prefix-container { margin-top: 20px; border: 1px solid #ccc; padding: 10px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 30px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .controls {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap; /* Added for better responsiveness */
+            justify-content: space-between; /* Added to space out main buttons and step controls */
+        }
+        .controls > div {
+            display: flex;
+            align-items: center;
+        }
+        .controls label {
+            font-weight: bold;
+            color: #555;
+            margin-right: 10px;
+        }
+        .controls input[type="text"],
+        .controls input[type="range"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            min-width: 150px; /* Added for better layout */
+        }
+        .controls input[type="range"] {
+            width: 200px;
+        }
+        .controls-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .controls-buttons button {
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .controls-buttons button:hover {
+            background-color: #4cae4c;
+        }
+        .step-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .step-controls button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+        .step-controls button:hover {
+            background-color: #0056b3;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        #status {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 16px;
+            color: #495057;
+            white-space: pre-wrap;
+        }
+        #speed-label {
+            margin-left: 10px;
+            color: #555;
+        }
+        #prefix-container {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
         #prefix-label {
             font-weight: bold;
-            margin-bottom: 30px; /* добавили отступ вниз */
+            color: #555;
+            margin-bottom: 15px;
+            display: block;
         }
-        #prefix-function-container { display: flex; align-items: center; }
+        #prefix-function-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto; /* Added for long patterns */
+            padding-bottom: 5px; /* To ensure scrollbar doesn't overlap */
+        }
         .prefix-box {
-            width: 30px;
-            height: 30px;
+            width: 35px;
+            height: 35px;
             border: 1px solid #ccc;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: monospace;
-            font-size: 14px;
-            margin-right: 5px;
-            position: relative;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
             background-color: #f9f9f9;
+            border-radius: 4px;
+            position: relative;
         }
         .prefix-index {
             position: absolute;
             top: -20px;
-            font-size: 15px;
-            color: #555;
+            font-size: 14px;
+            color: #777;
         }
-        #answer-container { margin-top: 20px; border: 1px solid #ccc; padding: 10px; }
-        #answer-label { font-weight: bold; margin-bottom: 5px; }
-        #answer { font-family: monospace; }
+        #answer-container {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        #answer-label {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 10px;
+            display: block;
+        }
+        #answer {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            color: #383d41;
+            background-color: #e0f7fa;
+            padding: 8px;
+            border-radius: 4px;
+        }
         .text-index {
             position: absolute;
-            bottom: -100px;
-            font-size: 15px;
-            color: #555;
-            width: 30px;
+            bottom: -25px;
+            font-size: 14px;
+            color: #777;
+            width: 35px;
             text-align: center;
         }
     </style>
@@ -51,27 +171,35 @@
 <body>
     <h1>KMP Algorithm Visualization</h1>
     <div class="controls">
-        <label for="text">Text:</label>
-        <input type="text" id="text" value="aababcabcdabcdeabcdef"><br><br>
-        <label for="pattern">Pattern:</label>
-        <input type="text" id="pattern" value="abcdef"><br><br>
-        <label for="speed">Animation Speed:</label>
-        <input type="range" id="speed" min="50" max="3000" value="500" step="100">
-        <span id="speed-label">500 ms</span><br><br>
-        <button onclick="startAnimation()">Start Animation</button>
-        <button onclick="pauseAnimation()">Pause</button>
-        <button onclick="reset()">Reset</button>
+        <div>
+            <label for="text">Text:</label>
+            <input type="text" id="text" value="aababcabcdabcdeabcdef">
+        </div>
+        <div>
+            <label for="pattern">Pattern:</label>
+            <input type="text" id="pattern" value="abcdef">
+        </div>
+        <div>
+            <label for="speed">Animation Speed:</label>
+            <input type="range" id="speed" min="50" max="3000" value="500" step="100">
+            <span id="speed-label">500 ms</span>
+        </div>
+        <div class="controls-buttons">
+            <button onclick="startAnimation()">Start Animation</button>
+            <button onclick="pauseAnimation()">Pause</button>
+            <button onclick="reset()">Reset</button>
+        </div>
         <div class="step-controls">
             <button onclick="prevStep()">Previous Step</button>
-            <button onclick="nextStep()">Next Step</button>
             <span id="step-counter">Step: 0/0</span>
+            <button onclick="nextStep()">Next Step</button>
         </div>
     </div>
     <canvas id="canvas" width="800" height="220"></canvas>
     <div id="status"></div>
 
     <div id="prefix-container">
-        <div id="prefix-label">Префикс-функция:</div>
+        <div id="prefix-label">Prefix Function:</div>
         <div id="prefix-function-container"></div>
     </div>
 
@@ -83,11 +211,11 @@
     <script>
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
-        const BOX_WIDTH = 30;
-        const BOX_HEIGHT = 30;
+        const BOX_WIDTH = 35;
+        const BOX_HEIGHT = 35;
         const MARGIN_X = 40;
         const MARGIN_Y = 40;
-        const ROW_SPACING = 20;
+        const ROW_SPACING = 25;
         let steps = [];
         let currentStep = 0;
         let text = "";
@@ -100,8 +228,8 @@
         const rect = canvas.getBoundingClientRect();
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
-        canvas.style.width = `${rect.width}px`;    // ← добавь это
-        canvas.style.height = `${rect.height}px`;  // ← и это
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
         ctx.scale(dpr, dpr);
 
         // Обновление метки скорости
@@ -112,30 +240,30 @@
         });
 
         function updateStepCounter() {
-            document.getElementById("step-counter").textContent = `Step: ${currentStep + 1}/${steps.length}`;
+            document.getElementById("step-counter").innerHTML = `Step: ${currentStep + 1} / ${steps.length}`;
         }
 
         function drawCharBox(x, y, value, isMismatch) {
-            ctx.fillStyle = isMismatch ? "#ffcccc" : "#ffffff"; // Красный фон при несовпадении
-            ctx.strokeStyle = "#000";
+            ctx.fillStyle = isMismatch ? "#ffdddd" : "#f9f9f9"; // Light red background for mismatch
+            ctx.strokeStyle = "#ccc";
+            ctx.lineWidth = 1;
             ctx.fillRect(x, y, BOX_WIDTH, BOX_HEIGHT);
-            ctx.strokeRect(x, y, BOX_WIDTH, BOX_HEIGHT); // Черная граница
+            ctx.strokeRect(x, y, BOX_WIDTH, BOX_HEIGHT);
 
-            // Если есть несовпадение, рисуем красную границу поверх черной
+            // Highlight mismatch with a stronger red border
             if (isMismatch) {
                 ctx.lineWidth = 2;
-                ctx.strokeStyle = "#f00"; // Красная граница
-                // Рисуем красную границу с одинаковой толщиной
-                ctx.strokeRect(x - 1, y - 1, BOX_WIDTH + 2, BOX_HEIGHT + 2); // Увеличиваем размер для красной границы
+                ctx.strokeStyle = "#ff4d4d";
+                ctx.strokeRect(x - 1, y - 1, BOX_WIDTH + 2, BOX_HEIGHT + 2);
                 ctx.lineWidth = 1;
+                ctx.strokeStyle = "#ccc";
             }
 
-            // Рисуем символ
-            ctx.fillStyle = "#000";
-            ctx.font = "16px Monospace";
+            ctx.fillStyle = "#333";
+            ctx.font = "18px 'Courier New', Courier, monospace";
             ctx.textAlign = "center";
-            ctx.fillText(value, x + BOX_WIDTH / 2, y + BOX_HEIGHT / 2 + 5);
-            ctx.textAlign = "left"; // Возвращаем выравнивание по левому краю
+            ctx.fillText(value, x + BOX_WIDTH / 2, y + BOX_HEIGHT / 2 + 6);
+            ctx.textAlign = "left";
         }
 
         function drawTextAndPattern(stepIndex) {
@@ -161,16 +289,16 @@
 
                 // Подсветка текущего символа
                 if (isCurrent) {
-                    ctx.strokeStyle = "#f00";
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(x, y, BOX_WIDTH, BOX_HEIGHT);
+                    ctx.strokeStyle = "#007bff";
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x - 1.5, y - 1.5, BOX_WIDTH + 3, BOX_HEIGHT + 3);
                     ctx.lineWidth = 1;
-                    ctx.strokeStyle = "#000";
+                    ctx.strokeStyle = "#ccc";
                 }
 
                 // Отрисовка индексов под текстом
-                ctx.fillStyle = "#555";
-                ctx.font = "15px Monospace";
+                ctx.fillStyle = "#777";
+                ctx.font = "14px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
                 ctx.textAlign = "center";
                 ctx.fillText(i, x + BOX_WIDTH / 2, MARGIN_Y + BOX_HEIGHT + 20);
                 ctx.textAlign = "left";
@@ -187,17 +315,17 @@
 
                 // Подсветка текущего символа
                 if (isCurrent) {
-                    ctx.strokeStyle = "#f00";
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(x, y, BOX_WIDTH, BOX_HEIGHT);
+                    ctx.strokeStyle = "#007bff";
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x - 1.5, y - 1.5, BOX_WIDTH + 3, BOX_HEIGHT + 3);
                     ctx.lineWidth = 1;
-                    ctx.strokeStyle = "#000";
+                    ctx.strokeStyle = "#ccc";
                 }
             }
 
             // Обновление статуса
             document.getElementById("status").textContent =
-                `Шаг ${stepIndex + 1}: ${step.status} (Сравнений: ${step.comparisons})`;
+                `Step ${stepIndex + 1}: ${step.status} (Comparisons: ${step.comparisons})`;
 
             // Обновление массива префикс-функции
             const prefixContainer = document.getElementById("prefix-function-container");
@@ -210,11 +338,11 @@
 
                     // Добавляем подсветку, если индекс совпадает с highlightPrefixIndex
                     if (step.highlightPrefixIndex !== undefined && step.highlightPrefixIndex === index) {
-                        box.style.backgroundColor = "#ffeb3b"; // ярко-жёлтый фон
-                        box.style.border = "2px solid #f00";   // красная рамка
+                        box.style.backgroundColor = "#ffeb3b"; // Bright yellow background
+                        box.style.border = "2px solid #f00";   // Red border
                     } else {
-                        box.style.backgroundColor = "#f9f9f9"; // Возвращаем стандартный фон
-                        box.style.border = "1px solid #ccc";   // Возвращаем стандартную рамку
+                        box.style.backgroundColor = "#f9f9f9"; // Standard background
+                        box.style.border = "1px solid #ccc";   // Standard border
                     }
 
                     const indexLabel = document.createElement("div");
@@ -231,7 +359,7 @@
         function animate() {
             if (currentStep >= steps.length) {
                 pauseAnimation();
-                document.getElementById("status").textContent += "\nАнимация завершена.";
+                document.getElementById("status").textContent += "\nAnimation finished.";
                 return;
             }
 
@@ -262,7 +390,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
-                        document.getElementById("status").textContent = `Ошибка: ${data.error}`;
+                        document.getElementById("status").textContent = `Error: ${data.error}`;
                         return;
                     }
 
@@ -277,7 +405,7 @@
                 })
                 .catch(err => {
                     console.error(err);
-                    document.getElementById("status").textContent = "Произошла ошибка.";
+                    document.getElementById("status").textContent = "An error occurred.";
                 });
             } else {
                 // Продолжаем анимацию с текущего шага
@@ -325,6 +453,9 @@
             currentStep = 0;
             updateStepCounter();
         }
+
+        // Initial step counter update
+        updateStepCounter();
     </script>
 </body>
 </html>
