@@ -9,6 +9,7 @@
         canvas { border: 1px solid #ccc; }
         #status { margin-top: 10px; }
         #speed-label { margin-left: 10px; }
+        .step-controls { margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -22,7 +23,13 @@
         <input type="range" id="speed" min="100" max="1000" value="500" step="100">
         <span id="speed-label">500 ms</span><br><br>
         <button onclick="startAnimation()">Start Animation</button>
+        <button onclick="pauseAnimation()">Pause</button>
         <button onclick="reset()">Reset</button>
+        <div class="step-controls">
+            <button onclick="prevStep()">Previous Step</button>
+            <button onclick="nextStep()">Next Step</button>
+            <span id="step-counter">Step: 0/0</span>
+        </div>
     </div>
     <canvas id="canvas" width="800" height="200"></canvas>
     <div id="status"></div>
@@ -40,6 +47,7 @@
         let text = "";
         let pattern = "";
         let animationId = null;
+        let isAnimating = false;
 
         // Обновление метки скорости
         const speedInput = document.getElementById("speed");
@@ -47,6 +55,10 @@
         speedInput.addEventListener("input", () => {
             speedLabel.textContent = `${speedInput.value} ms`;
         });
+
+        function updateStepCounter() {
+            document.getElementById("step-counter").textContent = `Step: ${currentStep + 1}/${steps.length}`;
+        }
 
         function drawCharBox(x, y, value, active) {
             ctx.fillStyle = active ? "#f00" : "#000";
@@ -59,6 +71,8 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.font = "16px Arial";
             ctx.textAlign = "left";
+
+            if (steps.length === 0 || stepIndex < 0 || stepIndex >= steps.length) return;
 
             // Отрисовка текста
             for (let i = 0; i < text.length; i++) {
@@ -80,21 +94,26 @@
             // Обновление статуса
             document.getElementById("status").textContent = 
                 `Step ${stepIndex + 1}: ${steps[stepIndex].status} (Comparisons: ${steps[stepIndex].comparisons})`;
+            
+            updateStepCounter();
         }
 
         function animate() {
             if (currentStep >= steps.length) {
-                cancelAnimationFrame(animationId);
+                pauseAnimation();
                 document.getElementById("status").textContent += "\nAnimation finished.";
                 return;
             }
 
             drawTextAndPattern(currentStep);
             currentStep++;
-            const delay = parseInt(speedInput.value); // Получаем текущую скорость
-            setTimeout(() => {
-                animationId = requestAnimationFrame(animate);
-            }, delay);
+            
+            if (isAnimating) {
+                const delay = parseInt(speedInput.value);
+                setTimeout(() => {
+                    animationId = requestAnimationFrame(animate);
+                }, delay);
+            }
         }
 
         function startAnimation() {
@@ -117,6 +136,7 @@
                 pattern = patternInput;
                 steps = data.steps;
                 currentStep = 0;
+                isAnimating = true;
                 if (animationId) cancelAnimationFrame(animationId);
                 animate();
             })
@@ -126,6 +146,28 @@
             });
         }
 
+        function pauseAnimation() {
+            isAnimating = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                drawTextAndPattern(currentStep);
+            }
+        }
+
+        function nextStep() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                drawTextAndPattern(currentStep);
+            }
+        }
+
         function reset() {
             document.getElementById("text").value = "aababcabcdabcdeabcdef";
             document.getElementById("pattern").value = "abcdef";
@@ -133,7 +175,10 @@
             speedLabel.textContent = "500 ms";
             document.getElementById("status").textContent = "";
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (animationId) cancelAnimationFrame(animationId);
+            pauseAnimation();
+            steps = [];
+            currentStep = 0;
+            updateStepCounter();
         }
     </script>
 </body>
