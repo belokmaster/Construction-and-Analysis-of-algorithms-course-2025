@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>KMP Algorithm Visualization</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .controls { margin-bottom: 20px; }
+        canvas { border: 1px solid #ccc; }
+        #status { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>KMP Algorithm Visualization</h1>
+    <div class="controls">
+        <label for="text">Text:</label>
+        <input type="text" id="text" value="aababcabcdabcdeabcdef"><br><br>
+        <label for="pattern">Pattern:</label>
+        <input type="text" id="pattern" value="abcdef"><br><br>
+        <button onclick="startAnimation()">Start Animation</button>
+        <button onclick="reset()">Reset</button>
+    </div>
+    <canvas id="canvas" width="800" height="200"></canvas>
+    <div id="status"></div>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const BOX_WIDTH = 30;
+        const BOX_HEIGHT = 30;
+        const MARGIN_X = 40;
+        const MARGIN_Y = 40;
+        const ROW_SPACING = 20;
+        let steps = [];
+        let currentStep = 0;
+        let text = "";
+        let pattern = "";
+        let animationId = null;
+
+        function drawCharBox(x, y, value, active) {
+            ctx.fillStyle = active ? "#f00" : "#000";
+            ctx.strokeStyle = "#000";
+            ctx.strokeRect(x, y, BOX_WIDTH, BOX_HEIGHT);
+            ctx.fillText(value, x + BOX_WIDTH / 2 - 5, y + BOX_HEIGHT / 2 + 5);
+        }
+
+        function drawTextAndPattern(stepIndex) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "16px Arial";
+            ctx.textAlign = "left";
+
+            // Отрисовка текста
+            for (let i = 0; i < text.length; i++) {
+                const x = MARGIN_X + i * BOX_WIDTH;
+                const y = MARGIN_Y;
+                const active = i === steps[stepIndex].textIndex;
+                drawCharBox(x, y, text[i], active);
+            }
+
+            // Отрисовка подстроки с учетом сдвига
+            const shift = steps[stepIndex].textIndex - steps[stepIndex].patternIndex;
+            for (let i = 0; i < pattern.length; i++) {
+                const x = MARGIN_X + (i + shift) * BOX_WIDTH;
+                const y = MARGIN_Y + BOX_HEIGHT + ROW_SPACING;
+                const active = i === steps[stepIndex].patternIndex;
+                drawCharBox(x, y, pattern[i], active);
+            }
+
+            // Обновление статуса
+            document.getElementById("status").textContent = 
+                `Step ${stepIndex + 1}: ${steps[stepIndex].status} (Comparisons: ${steps[stepIndex].comparisons})`;
+        }
+
+        function animate() {
+            if (currentStep >= steps.length) {
+                cancelAnimationFrame(animationId);
+                document.getElementById("status").textContent += "\nAnimation finished.";
+                return;
+            }
+
+            drawTextAndPattern(currentStep);
+            currentStep++;
+            setTimeout(() => {
+                animationId = requestAnimationFrame(animate);
+            }, 500); // Задержка 500 мс между шагами
+        }
+
+        function startAnimation() {
+            const textInput = document.getElementById("text").value;
+            const patternInput = document.getElementById("pattern").value;
+
+            fetch('/kmp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: textInput, pattern: patternInput })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("status").textContent = `Error: ${data.error}`;
+                    return;
+                }
+
+                text = textInput;
+                pattern = patternInput;
+                steps = data.steps;
+                currentStep = 0;
+                if (animationId) cancelAnimationFrame(animationId);
+                animate();
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById("status").textContent = "An error occurred.";
+            });
+        }
+
+        function reset() {
+            document.getElementById("text").value = "aababcabcdabcdeabcdef";
+            document.getElementById("pattern").value = "abcdef";
+            document.getElementById("status").textContent = "";
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (animationId) cancelAnimationFrame(animationId);
+        }
+    </script>
+</body>
+</html>
