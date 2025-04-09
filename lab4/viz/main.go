@@ -72,6 +72,9 @@ func searchKMP(text, pattern string) KMPResult {
 	n := len(text)
 	m := len(pattern)
 
+	// Создаем массив для хранения максимальных длин совпадений для каждого символа текста
+	maxPrefix := make([]int, n)
+
 	for i < n {
 		comparisons++
 		match := text[i] == pattern[j]
@@ -81,31 +84,30 @@ func searchKMP(text, pattern string) KMPResult {
 			Match:          match,
 			Shift:          false,
 			Comparisons:    comparisons,
-			PrefixFunction: make([]int, n), // Массив для отображения длины совпадения
+			PrefixFunction: make([]int, n),
 		}
 
-		// Заполняем PrefixFunction длиной текущего совпадения
-		matchLength := 0
-		for k := 0; k < j; k++ {
-			if i-j+k >= 0 && text[i-j+k] == pattern[k] {
-				matchLength++
-			} else {
-				break
-			}
-		}
-		for k := 0; k < n; k++ {
-			if k >= i-matchLength+1 && k <= i {
-				step.PrefixFunction[k] = matchLength
-			}
-		}
+		// Копируем предыдущие максимальные значения
+		copy(step.PrefixFunction, maxPrefix)
 
 		if match {
+			// Обновляем максимальную длину совпадения для текущей позиции
+			if j+1 > maxPrefix[i] {
+				maxPrefix[i] = j + 1
+			}
+			step.PrefixFunction[i] = maxPrefix[i]
 			step.Status = "Match. Advancing."
 			steps = append(steps, step)
 			i++
 			j++
 			if j == m {
 				positions = append(positions, i-j)
+				// Обновляем все позиции, где было полное совпадение
+				for k := i - m; k < i; k++ {
+					if k >= 0 && k < n {
+						maxPrefix[k] = k - (i - m) + 1 // Длина совпадения от начала
+					}
+				}
 				step = Step{
 					TextIndex:      i - 1,
 					PatternIndex:   j - 1,
@@ -114,14 +116,9 @@ func searchKMP(text, pattern string) KMPResult {
 					Status:         "Pattern found! Shifting.",
 					FailureValue:   failure[j-1],
 					Comparisons:    comparisons,
-					PrefixFunction: make([]int, n), // Обновляем PrefixFunction после нахождения
+					PrefixFunction: make([]int, n),
 				}
-				matchLength := m
-				for k := 0; k < n; k++ {
-					if k >= i-matchLength && k < i {
-						step.PrefixFunction[k] = matchLength
-					}
-				}
+				copy(step.PrefixFunction, maxPrefix)
 				steps = append(steps, step)
 				j = failure[j-1]
 			}
@@ -137,21 +134,9 @@ func searchKMP(text, pattern string) KMPResult {
 				Shift:          true,
 				Status:         "Shifting pattern.",
 				Comparisons:    comparisons,
-				PrefixFunction: make([]int, n), // Обновляем PrefixFunction после сдвига
+				PrefixFunction: make([]int, n),
 			}
-			matchLength := 0
-			for k := 0; k < j; k++ {
-				if i-j+k >= 0 && text[i-j+k] == pattern[k] {
-					matchLength++
-				} else {
-					break
-				}
-			}
-			for k := 0; k < n; k++ {
-				if k >= i-matchLength+1 && k <= i {
-					step.PrefixFunction[k] = matchLength
-				}
-			}
+			copy(step.PrefixFunction, maxPrefix)
 			steps = append(steps, step)
 		} else {
 			step.Status = "Mismatch. Shifting one position."
