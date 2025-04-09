@@ -64,7 +64,18 @@
             ctx.fillStyle = isMismatch ? "#ffcccc" : "#ffffff"; // Красный фон при несовпадении
             ctx.strokeStyle = "#000";
             ctx.fillRect(x, y, BOX_WIDTH, BOX_HEIGHT);
-            ctx.strokeRect(x, y, BOX_WIDTH, BOX_HEIGHT);
+            ctx.strokeRect(x, y, BOX_WIDTH, BOX_HEIGHT); // Черная граница
+
+            // Если есть несовпадение, рисуем красную границу поверх черной
+            if (isMismatch) {
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#f00"; // Красная граница
+                // Рисуем красную границу с одинаковой толщиной
+                ctx.strokeRect(x - 1, y - 1, BOX_WIDTH + 2, BOX_HEIGHT + 2); // Увеличиваем размер для красной границы
+                ctx.lineWidth = 1;
+            }
+
+            // Рисуем символ
             ctx.fillStyle = "#000";
             ctx.fillText(value, x + BOX_WIDTH / 2 - 5, y + BOX_HEIGHT / 2 + 5);
         }
