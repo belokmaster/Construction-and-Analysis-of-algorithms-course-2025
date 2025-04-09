@@ -10,6 +10,9 @@
         #status { margin-top: 10px; }
         #speed-label { margin-left: 10px; }
         .step-controls { margin-top: 10px; }
+        #answer-container { margin-top: 20px; border: 1px solid #ccc; padding: 10px; }
+        #answer-label { font-weight: bold; margin-bottom: 5px; }
+        #answer { font-family: monospace; }
     </style>
 </head>
 <body>
@@ -33,6 +36,11 @@
     </div>
     <canvas id="canvas" width="800" height="200"></canvas>
     <div id="status"></div>
+
+    <div id="answer-container">
+        <div id="answer-label">Found at indices:</div>
+        <div id="answer"></div>
+    </div>
 
     <script>
         const canvas = document.getElementById("canvas");
@@ -97,10 +105,10 @@
                 const x = MARGIN_X + i * BOX_WIDTH;
                 const y = MARGIN_Y;
                 const isCurrent = i === textIndex;
-                const isMismatch = isCurrent && patternIndex >= 0 && 
-                                  text[textIndex] !== pattern[patternIndex];
+                const isMismatch = isCurrent && patternIndex >= 0 &&
+                                    text[textIndex] !== pattern[patternIndex];
                 drawCharBox(x, y, text[i], isMismatch);
-                
+
                 // Подсветка текущего символа
                 if (isCurrent) {
                     ctx.strokeStyle = "#f00";
@@ -116,10 +124,10 @@
                 const x = MARGIN_X + (i + shift) * BOX_WIDTH;
                 const y = MARGIN_Y + BOX_HEIGHT + ROW_SPACING;
                 const isCurrent = i === patternIndex;
-                const isMismatch = isCurrent && patternIndex >= 0 && 
-                                 text[textIndex] !== pattern[patternIndex];
+                const isMismatch = isCurrent && patternIndex >= 0 &&
+                                   text[textIndex] !== pattern[patternIndex];
                 drawCharBox(x, y, pattern[i], isMismatch);
-                
+
                 // Подсветка текущего символа
                 if (isCurrent) {
                     ctx.strokeStyle = "#f00";
@@ -131,9 +139,9 @@
             }
 
             // Обновление статуса
-            document.getElementById("status").textContent = 
+            document.getElementById("status").textContent =
                 `Step ${stepIndex + 1}: ${step.status} (Comparisons: ${step.comparisons})`;
-            
+
             updateStepCounter();
         }
 
@@ -145,7 +153,7 @@
             }
 
             drawTextAndPattern(currentStep);
-            
+
             if (isAnimating) {
                 currentStep++;
                 const delay = parseInt(speedInput.value);
@@ -182,6 +190,7 @@
                     isAnimating = true;
                     if (animationId) cancelAnimationFrame(animationId);
                     animate();
+                    document.getElementById("answer").textContent = data.positions.join(", ");
                 })
                 .catch(err => {
                     console.error(err);
@@ -225,6 +234,7 @@
             document.getElementById("speed").value = "500";
             speedLabel.textContent = "500 ms";
             document.getElementById("status").textContent = "";
+            document.getElementById("answer").textContent = "";
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             pauseAnimation();
             steps = [];
