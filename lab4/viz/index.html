@@ -8,6 +8,7 @@
         .controls { margin-bottom: 20px; }
         canvas { border: 1px solid #ccc; }
         #status { margin-top: 10px; }
+        #speed-label { margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -17,6 +18,9 @@
         <input type="text" id="text" value="aababcabcdabcdeabcdef"><br><br>
         <label for="pattern">Pattern:</label>
         <input type="text" id="pattern" value="abcdef"><br><br>
+        <label for="speed">Animation Speed:</label>
+        <input type="range" id="speed" min="100" max="1000" value="500" step="100">
+        <span id="speed-label">500 ms</span><br><br>
         <button onclick="startAnimation()">Start Animation</button>
         <button onclick="reset()">Reset</button>
     </div>
@@ -36,6 +40,13 @@
         let text = "";
         let pattern = "";
         let animationId = null;
+
+        // Обновление метки скорости
+        const speedInput = document.getElementById("speed");
+        const speedLabel = document.getElementById("speed-label");
+        speedInput.addEventListener("input", () => {
+            speedLabel.textContent = `${speedInput.value} ms`;
+        });
 
         function drawCharBox(x, y, value, active) {
             ctx.fillStyle = active ? "#f00" : "#000";
@@ -80,9 +91,10 @@
 
             drawTextAndPattern(currentStep);
             currentStep++;
+            const delay = parseInt(speedInput.value); // Получаем текущую скорость
             setTimeout(() => {
                 animationId = requestAnimationFrame(animate);
-            }, 500); // Задержка 500 мс между шагами
+            }, delay);
         }
 
         function startAnimation() {
@@ -117,6 +129,8 @@
         function reset() {
             document.getElementById("text").value = "aababcabcdabcdeabcdef";
             document.getElementById("pattern").value = "abcdef";
+            document.getElementById("speed").value = "500";
+            speedLabel.textContent = "500 ms";
             document.getElementById("status").textContent = "";
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (animationId) cancelAnimationFrame(animationId);
