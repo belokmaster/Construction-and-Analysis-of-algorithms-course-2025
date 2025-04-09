@@ -60,10 +60,12 @@
             document.getElementById("step-counter").textContent = `Step: ${currentStep + 1}/${steps.length}`;
         }
 
-        function drawCharBox(x, y, value, active) {
-            ctx.fillStyle = active ? "#f00" : "#000";
+        function drawCharBox(x, y, value, isMismatch) {
+            ctx.fillStyle = isMismatch ? "#ffcccc" : "#ffffff"; // Красный фон при несовпадении
             ctx.strokeStyle = "#000";
+            ctx.fillRect(x, y, BOX_WIDTH, BOX_HEIGHT);
             ctx.strokeRect(x, y, BOX_WIDTH, BOX_HEIGHT);
+            ctx.fillStyle = "#000";
             ctx.fillText(value, x + BOX_WIDTH / 2 - 5, y + BOX_HEIGHT / 2 + 5);
         }
 
@@ -74,26 +76,52 @@
 
             if (steps.length === 0 || stepIndex < 0 || stepIndex >= steps.length) return;
 
+            const step = steps[stepIndex];
+            const textIndex = step.textIndex;
+            const patternIndex = step.patternIndex;
+            const shift = textIndex - patternIndex;
+
             // Отрисовка текста
             for (let i = 0; i < text.length; i++) {
                 const x = MARGIN_X + i * BOX_WIDTH;
                 const y = MARGIN_Y;
-                const active = i === steps[stepIndex].textIndex;
-                drawCharBox(x, y, text[i], active);
+                const isCurrent = i === textIndex;
+                const isMismatch = isCurrent && patternIndex >= 0 && 
+                                  text[textIndex] !== pattern[patternIndex];
+                drawCharBox(x, y, text[i], isMismatch);
+                
+                // Подсветка текущего символа
+                if (isCurrent) {
+                    ctx.strokeStyle = "#f00";
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x, y, BOX_WIDTH, BOX_HEIGHT);
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = "#000";
+                }
             }
 
             // Отрисовка подстроки с учетом сдвига
-            const shift = steps[stepIndex].textIndex - steps[stepIndex].patternIndex;
             for (let i = 0; i < pattern.length; i++) {
                 const x = MARGIN_X + (i + shift) * BOX_WIDTH;
                 const y = MARGIN_Y + BOX_HEIGHT + ROW_SPACING;
-                const active = i === steps[stepIndex].patternIndex;
-                drawCharBox(x, y, pattern[i], active);
+                const isCurrent = i === patternIndex;
+                const isMismatch = isCurrent && patternIndex >= 0 && 
+                                 text[textIndex] !== pattern[patternIndex];
+                drawCharBox(x, y, pattern[i], isMismatch);
+                
+                // Подсветка текущего символа
+                if (isCurrent) {
+                    ctx.strokeStyle = "#f00";
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x, y, BOX_WIDTH, BOX_HEIGHT);
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = "#000";
+                }
             }
 
             // Обновление статуса
             document.getElementById("status").textContent = 
-                `Step ${stepIndex + 1}: ${steps[stepIndex].status} (Comparisons: ${steps[stepIndex].comparisons})`;
+                `Step ${stepIndex + 1}: ${step.status} (Comparisons: ${step.comparisons})`;
             
             updateStepCounter();
         }
