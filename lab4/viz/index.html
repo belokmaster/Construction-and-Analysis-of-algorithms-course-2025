@@ -19,8 +19,8 @@
             display: flex;
             gap: 20px;
             align-items: center;
-            flex-wrap: wrap; /* Added for better responsiveness */
-            justify-content: space-between; /* Added to space out main buttons and step controls */
+            flex-wrap: wrap;
+            justify-content: space-between;
         }
         .controls > div {
             display: flex;
@@ -37,7 +37,7 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 16px;
-            min-width: 150px; /* Added for better layout */
+            min-width: 150px;
         }
         .controls input[type="range"] {
             width: 200px;
@@ -77,11 +77,17 @@
         .step-controls button:hover {
             background-color: #0056b3;
         }
-        canvas {
+        .canvas-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 20px;
             border: 1px solid #ccc;
             background-color: #fff;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+        }
+        canvas {
+            display: block;
+            background-color: #fff;
         }
         #status {
             background-color: #e9ecef;
@@ -103,6 +109,8 @@
             border-radius: 4px;
             margin-top: 20px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
+            overflow-x: auto;
         }
         #prefix-label {
             font-weight: bold;
@@ -114,8 +122,9 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            overflow-x: auto; /* Added for long patterns */
-            padding-bottom: 5px; /* To ensure scrollbar doesn't overlap */
+            overflow-x: auto;
+            width: 100%;
+            padding-bottom: 5px;
         }
         .prefix-box {
             width: 35px;
@@ -129,12 +138,21 @@
             background-color: #f9f9f9;
             border-radius: 4px;
             position: relative;
+            flex-shrink: 0;
         }
         .prefix-index {
             position: absolute;
             top: -20px;
             font-size: 14px;
             color: #777;
+        }
+        .prefix-bottom-index {
+            position: absolute;
+            bottom: -20px;
+            font-size: 12px;
+            color: #777;
+            width: 100%;
+            text-align: center;
         }
         #answer-container {
             background-color: #fff;
@@ -195,7 +213,9 @@
             <button onclick="nextStep()">Next Step</button>
         </div>
     </div>
-    <canvas id="canvas" width="800" height="220"></canvas>
+    <div class="canvas-container">
+        <canvas id="canvas" width="800" height="220"></canvas>
+    </div>
     <div id="status"></div>
 
     <div id="prefix-container">
@@ -223,14 +243,33 @@
         let animationId = null;
         let isAnimating = false;
 
-        // Установка более высокого разрешения для canvas
-        const dpr = window.devicePixelRatio || 1;
-        const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        canvas.style.width = `${rect.width}px`;
-        canvas.style.height = `${rect.height}px`;
-        ctx.scale(dpr, dpr);
+        // Установка динамического размера canvas
+        function resizeCanvas() {
+            const container = document.querySelector('.canvas-container');
+            const textInput = document.getElementById("text").value;
+            const patternInput = document.getElementById("pattern").value;
+            
+            // Рассчитываем необходимую ширину canvas
+            const maxLength = Math.max(textInput.length, patternInput.length);
+            const requiredWidth = MARGIN_X * 2 + maxLength * BOX_WIDTH;
+            
+            // Устанавливаем размеры canvas
+            canvas.width = Math.max(requiredWidth, container.clientWidth);
+            canvas.height = 220;
+            
+            // Масштабирование для HiDPI дисплеев
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+            ctx.scale(dpr, dpr);
+        }
+
+        // Инициализация размера canvas
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
 
         // Обновление метки скорости
         const speedInput = document.getElementById("speed");
@@ -243,8 +282,9 @@
             document.getElementById("step-counter").innerHTML = `Step: ${currentStep + 1} / ${steps.length}`;
         }
 
-        function drawCharBox(x, y, value, isMismatch) {
-            ctx.fillStyle = isMismatch ? "#ffdddd" : "#f9f9f9"; // Light red background for mismatch
+        function drawCharBox(x, y, value, isMismatch, isCurrent) {
+            const backgroundColor = isMismatch ? "#ffdddd" : (isCurrent ? "#dcdcdc" : "#f9f9f9");
+            ctx.fillStyle = backgroundColor;
             ctx.strokeStyle = "#ccc";
             ctx.lineWidth = 1;
             ctx.fillRect(x, y, BOX_WIDTH, BOX_HEIGHT);
@@ -332,24 +372,40 @@
             prefixContainer.innerHTML = ""; // Очищаем предыдущие элементы
             if (step.prefixFunction) {
                 step.prefixFunction.forEach((value, index) => {
+                    const wrapper = document.createElement("div");
+                    wrapper.style.display = "flex";
+                    wrapper.style.flexDirection = "column";
+                    wrapper.style.alignItems = "center";
+                    wrapper.style.marginRight = "5px";
+                    
                     const box = document.createElement("div");
                     box.classList.add("prefix-box");
                     box.textContent = value;
 
                     // Добавляем подсветку, если индекс совпадает с highlightPrefixIndex
                     if (step.highlightPrefixIndex !== undefined && step.highlightPrefixIndex === index) {
-                        box.style.backgroundColor = "#ffeb3b"; // Bright yellow background
-                        box.style.border = "2px solid #f00";   // Red border
+                        box.style.backgroundColor = "#ffeb3b";
+                        box.style.border = "2px solid #f00";
                     } else {
-                        box.style.backgroundColor = "#f9f9f9"; // Standard background
-                        box.style.border = "1px solid #ccc";   // Standard border
+                        box.style.backgroundColor = "#f9f9f9";
+                        box.style.border = "1px solid #ccc";
                     }
 
                     const indexLabel = document.createElement("div");
                     indexLabel.classList.add("prefix-index");
                     indexLabel.textContent = index;
                     box.appendChild(indexLabel);
-                    prefixContainer.appendChild(box);
+                    
+                    // Добавляем подпись индекса под квадратиком
+                    const bottomIndexLabel = document.createElement("div");
+                    bottomIndexLabel.style.fontSize = "12px";
+                    bottomIndexLabel.style.color = "#777";
+                    bottomIndexLabel.style.marginTop = "2px";
+                    bottomIndexLabel.textContent = index;
+                    
+                    wrapper.appendChild(box);
+                    wrapper.appendChild(bottomIndexLabel);
+                    prefixContainer.appendChild(wrapper);
                 });
             }
 
@@ -381,6 +437,9 @@
             if (steps.length === 0 || currentStep >= steps.length) {
                 const textInput = document.getElementById("text").value;
                 const patternInput = document.getElementById("pattern").value;
+
+                // Обновляем размер canvas перед началом анимации
+                resizeCanvas();
 
                 fetch('/kmp', {
                     method: 'POST',
@@ -452,6 +511,7 @@
             steps = [];
             currentStep = 0;
             updateStepCounter();
+            resizeCanvas();
         }
 
         // Initial step counter update
