@@ -20,7 +20,7 @@
         <label for="pattern">Pattern:</label>
         <input type="text" id="pattern" value="abcdef"><br><br>
         <label for="speed">Animation Speed:</label>
-        <input type="range" id="speed" min="100" max="1000" value="500" step="100">
+        <input type="range" id="speed" min="50" max="3000" value="500" step="100">
         <span id="speed-label">500 ms</span><br><br>
         <button onclick="startAnimation()">Start Animation</button>
         <button onclick="pauseAnimation()">Pause</button>
@@ -106,44 +106,54 @@
             }
 
             drawTextAndPattern(currentStep);
-            currentStep++;
             
             if (isAnimating) {
+                currentStep++;
                 const delay = parseInt(speedInput.value);
                 setTimeout(() => {
-                    animationId = requestAnimationFrame(animate);
+                    if (currentStep < steps.length) {
+                        animationId = requestAnimationFrame(animate);
+                    }
                 }, delay);
             }
         }
 
         function startAnimation() {
-            const textInput = document.getElementById("text").value;
-            const patternInput = document.getElementById("pattern").value;
+            // Если шаги еще не загружены или анимация завершена
+            if (steps.length === 0 || currentStep >= steps.length) {
+                const textInput = document.getElementById("text").value;
+                const patternInput = document.getElementById("pattern").value;
 
-            fetch('/kmp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: textInput, pattern: patternInput })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    document.getElementById("status").textContent = `Error: ${data.error}`;
-                    return;
-                }
+                fetch('/kmp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: textInput, pattern: patternInput })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById("status").textContent = `Error: ${data.error}`;
+                        return;
+                    }
 
-                text = textInput;
-                pattern = patternInput;
-                steps = data.steps;
-                currentStep = 0;
+                    text = textInput;
+                    pattern = patternInput;
+                    steps = data.steps;
+                    currentStep = 0;
+                    isAnimating = true;
+                    if (animationId) cancelAnimationFrame(animationId);
+                    animate();
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById("status").textContent = "An error occurred.";
+                });
+            } else {
+                // Продолжаем анимацию с текущего шага
                 isAnimating = true;
                 if (animationId) cancelAnimationFrame(animationId);
                 animate();
-            })
-            .catch(err => {
-                console.error(err);
-                document.getElementById("status").textContent = "An error occurred.";
-            });
+            }
         }
 
         function pauseAnimation() {
@@ -155,6 +165,7 @@
         }
 
         function prevStep() {
+            pauseAnimation();
             if (currentStep > 0) {
                 currentStep--;
                 drawTextAndPattern(currentStep);
@@ -162,6 +173,7 @@
         }
 
         function nextStep() {
+            pauseAnimation();
             if (currentStep < steps.length - 1) {
                 currentStep++;
                 drawTextAndPattern(currentStep);
