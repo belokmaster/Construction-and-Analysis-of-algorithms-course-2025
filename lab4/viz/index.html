@@ -10,12 +10,42 @@
         #status { margin-top: 10px; }
         #speed-label { margin-left: 10px; }
         .step-controls { margin-top: 10px; }
+        #prefix-container { margin-top: 20px; border: 1px solid #ccc; padding: 10px; }
+        #prefix-label {
+            font-weight: bold;
+            margin-bottom: 30px; /* добавили отступ вниз */
+        }
+        #prefix-function-container { display: flex; align-items: center; }
+        .prefix-box {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: monospace;
+            font-size: 14px;
+            margin-right: 5px;
+            position: relative;
+            background-color: #f9f9f9;
+        }
+        .prefix-index {
+            position: absolute;
+            top: -20px;
+            font-size: 15px;
+            color: #555;
+        }
         #answer-container { margin-top: 20px; border: 1px solid #ccc; padding: 10px; }
         #answer-label { font-weight: bold; margin-bottom: 5px; }
         #answer { font-family: monospace; }
-        #prefix-container { margin-top: 10px; border: 1px solid #ccc; padding: 10px; }
-        #prefix-label { font-weight: bold; margin-bottom: 5px; }
-        #prefix-function { font-family: monospace; }
+        .text-index {
+            position: absolute;
+            bottom: -100px;
+            font-size: 15px;
+            color: #555;
+            width: 30px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -37,17 +67,17 @@
             <span id="step-counter">Step: 0/0</span>
         </div>
     </div>
-    <canvas id="canvas" width="800" height="200"></canvas>
+    <canvas id="canvas" width="800" height="220"></canvas>
     <div id="status"></div>
+
+    <div id="prefix-container">
+        <div id="prefix-label">Префикс-функция:</div>
+        <div id="prefix-function-container"></div>
+    </div>
 
     <div id="answer-container">
         <div id="answer-label">Found at indices:</div>
         <div id="answer"></div>
-    </div>
-
-    <div id="prefix-container">
-        <div id="prefix-label">Prefix Function (at current step):</div>
-        <div id="prefix-function"></div>
     </div>
 
     <script>
@@ -64,6 +94,15 @@
         let pattern = "";
         let animationId = null;
         let isAnimating = false;
+
+        // Установка более высокого разрешения для canvas
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        canvas.style.width = `${rect.width}px`;    // ← добавь это
+        canvas.style.height = `${rect.height}px`;  // ← и это
+        ctx.scale(dpr, dpr);
 
         // Обновление метки скорости
         const speedInput = document.getElementById("speed");
@@ -93,12 +132,15 @@
 
             // Рисуем символ
             ctx.fillStyle = "#000";
-            ctx.fillText(value, x + BOX_WIDTH / 2 - 5, y + BOX_HEIGHT / 2 + 5);
+            ctx.font = "16px Monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(value, x + BOX_WIDTH / 2, y + BOX_HEIGHT / 2 + 5);
+            ctx.textAlign = "left"; // Возвращаем выравнивание по левому краю
         }
 
         function drawTextAndPattern(stepIndex) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.font = "16px Arial";
+            ctx.font = "16px Monospace";
             ctx.textAlign = "left";
 
             if (steps.length === 0 || stepIndex < 0 || stepIndex >= steps.length) return;
@@ -125,12 +167,19 @@
                     ctx.lineWidth = 1;
                     ctx.strokeStyle = "#000";
                 }
+
+                // Отрисовка индексов под текстом
+                ctx.fillStyle = "#555";
+                ctx.font = "15px Monospace";
+                ctx.textAlign = "center";
+                ctx.fillText(i, x + BOX_WIDTH / 2, MARGIN_Y + BOX_HEIGHT + 20);
+                ctx.textAlign = "left";
             }
 
             // Отрисовка подстроки с учетом сдвига
             for (let i = 0; i < pattern.length; i++) {
                 const x = MARGIN_X + (i + shift) * BOX_WIDTH;
-                const y = MARGIN_Y + BOX_HEIGHT + ROW_SPACING;
+                const y = MARGIN_Y + BOX_HEIGHT + ROW_SPACING + 30;
                 const isCurrent = i === patternIndex;
                 const isMismatch = isCurrent && patternIndex >= 0 &&
                                     text[textIndex] !== pattern[patternIndex];
@@ -148,13 +197,32 @@
 
             // Обновление статуса
             document.getElementById("status").textContent =
-                `Step ${stepIndex + 1}: ${step.status} (Comparisons: ${step.comparisons})`;
+                `Шаг ${stepIndex + 1}: ${step.status} (Сравнений: ${step.comparisons})`;
 
             // Обновление массива префикс-функции
+            const prefixContainer = document.getElementById("prefix-function-container");
+            prefixContainer.innerHTML = ""; // Очищаем предыдущие элементы
             if (step.prefixFunction) {
-                document.getElementById("prefix-function").textContent = `[${step.prefixFunction.join(", ")}]`;
-            } else {
-                document.getElementById("prefix-function").textContent = "";
+                step.prefixFunction.forEach((value, index) => {
+                    const box = document.createElement("div");
+                    box.classList.add("prefix-box");
+                    box.textContent = value;
+
+                    // Добавляем подсветку, если индекс совпадает с highlightPrefixIndex
+                    if (step.highlightPrefixIndex !== undefined && step.highlightPrefixIndex === index) {
+                        box.style.backgroundColor = "#ffeb3b"; // ярко-жёлтый фон
+                        box.style.border = "2px solid #f00";   // красная рамка
+                    } else {
+                        box.style.backgroundColor = "#f9f9f9"; // Возвращаем стандартный фон
+                        box.style.border = "1px solid #ccc";   // Возвращаем стандартную рамку
+                    }
+
+                    const indexLabel = document.createElement("div");
+                    indexLabel.classList.add("prefix-index");
+                    indexLabel.textContent = index;
+                    box.appendChild(indexLabel);
+                    prefixContainer.appendChild(box);
+                });
             }
 
             updateStepCounter();
@@ -163,7 +231,7 @@
         function animate() {
             if (currentStep >= steps.length) {
                 pauseAnimation();
-                document.getElementById("status").textContent += "\nAnimation finished.";
+                document.getElementById("status").textContent += "\nАнимация завершена.";
                 return;
             }
 
@@ -194,7 +262,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
-                        document.getElementById("status").textContent = `Error: ${data.error}`;
+                        document.getElementById("status").textContent = `Ошибка: ${data.error}`;
                         return;
                     }
 
@@ -209,7 +277,7 @@
                 })
                 .catch(err => {
                     console.error(err);
-                    document.getElementById("status").textContent = "An error occurred.";
+                    document.getElementById("status").textContent = "Произошла ошибка.";
                 });
             } else {
                 // Продолжаем анимацию с текущего шага
@@ -250,7 +318,7 @@
             speedLabel.textContent = "500 ms";
             document.getElementById("status").textContent = "";
             document.getElementById("answer").textContent = "";
-            document.getElementById("prefix-function").textContent = "";
+            document.getElementById("prefix-function-container").innerHTML = "";
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             pauseAnimation();
             steps = [];
