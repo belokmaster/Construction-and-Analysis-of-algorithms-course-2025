@@ -324,24 +324,8 @@
                 const y = MARGIN_Y;
                 const isCurrent = i === textIndex;
                 const isMismatch = isCurrent && patternIndex >= 0 &&
-                                    text[textIndex] !== pattern[patternIndex];
+                                text[textIndex] !== pattern[patternIndex];
                 drawCharBox(x, y, text[i], isMismatch);
-
-                // Подсветка текущего символа
-                if (isCurrent) {
-                    ctx.strokeStyle = "#007bff";
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(x - 1.5, y - 1.5, BOX_WIDTH + 3, BOX_HEIGHT + 3);
-                    ctx.lineWidth = 1;
-                    ctx.strokeStyle = "#ccc";
-                }
-
-                // Отрисовка индексов под текстом
-                ctx.fillStyle = "#777";
-                ctx.font = "14px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText(i, x + BOX_WIDTH / 2, MARGIN_Y + BOX_HEIGHT + 20);
-                ctx.textAlign = "left";
             }
 
             // Отрисовка подстроки с учетом сдвига
@@ -350,17 +334,41 @@
                 const y = MARGIN_Y + BOX_HEIGHT + ROW_SPACING + 30;
                 const isCurrent = i === patternIndex;
                 const isMismatch = isCurrent && patternIndex >= 0 &&
-                                    text[textIndex] !== pattern[patternIndex];
+                                text[textIndex] !== pattern[patternIndex];
                 drawCharBox(x, y, pattern[i], isMismatch);
+            }
 
-                // Подсветка текущего символа
+            // Отрисовка голубых рамок для текущих символов ПОСЛЕ всех квадратов
+            for (let i = 0; i < text.length; i++) {
+                const x = MARGIN_X + i * BOX_WIDTH;
+                const y = MARGIN_Y;
+                const isCurrent = i === textIndex;
                 if (isCurrent) {
                     ctx.strokeStyle = "#007bff";
                     ctx.lineWidth = 3;
                     ctx.strokeRect(x - 1.5, y - 1.5, BOX_WIDTH + 3, BOX_HEIGHT + 3);
-                    ctx.lineWidth = 1;
-                    ctx.strokeStyle = "#ccc";
                 }
+            }
+
+            for (let i = 0; i < pattern.length; i++) {
+                const x = MARGIN_X + (i + shift) * BOX_WIDTH;
+                const y = MARGIN_Y + BOX_HEIGHT + ROW_SPACING + 30;
+                const isCurrent = i === patternIndex;
+                if (isCurrent) {
+                    ctx.strokeStyle = "#007bff";
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x - 1.5, y - 1.5, BOX_WIDTH + 3, BOX_HEIGHT + 3);
+                }
+            }
+
+            // Отрисовка индексов под текстом
+            for (let i = 0; i < text.length; i++) {
+                const x = MARGIN_X + i * BOX_WIDTH;
+                ctx.fillStyle = "#777";
+                ctx.font = "14px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(i, x + BOX_WIDTH / 2, MARGIN_Y + BOX_HEIGHT + 20);
+                ctx.textAlign = "left";
             }
 
             // Обновление статуса
@@ -369,7 +377,7 @@
 
             // Обновление массива префикс-функции
             const prefixContainer = document.getElementById("prefix-function-container");
-            prefixContainer.innerHTML = ""; // Очищаем предыдущие элементы
+            prefixContainer.innerHTML = "";
             if (step.prefixFunction) {
                 step.prefixFunction.forEach((value, index) => {
                     const wrapper = document.createElement("div");
@@ -382,7 +390,6 @@
                     box.classList.add("prefix-box");
                     box.textContent = value;
 
-                    // Добавляем подсветку, если индекс совпадает с highlightPrefixIndex
                     if (step.highlightPrefixIndex !== undefined && step.highlightPrefixIndex === index) {
                         box.style.backgroundColor = "#cccccc";
                         box.style.border = "2px solid #007bff";
@@ -396,7 +403,6 @@
                     indexLabel.textContent = index;
                     box.appendChild(indexLabel);
                     
-                    // Добавляем подпись индекса под квадратиком
                     const bottomIndexLabel = document.createElement("div");
                     bottomIndexLabel.style.fontSize = "12px";
                     bottomIndexLabel.style.color = "#777";
