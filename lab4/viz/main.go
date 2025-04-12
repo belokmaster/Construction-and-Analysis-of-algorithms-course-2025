@@ -112,6 +112,7 @@ func searchKMP(text, pattern string) KMPResult {
 						maxPrefix[k] = k - (i - m) + 1 // Длина совпадения от начала
 					}
 				}
+				// Не подсвечиваем последний шаг
 				step = Step{
 					TextIndex:            i - 1,
 					PatternIndex:         j - 1,
@@ -121,7 +122,7 @@ func searchKMP(text, pattern string) KMPResult {
 					FailureValue:         failure[j-1],
 					Comparisons:          comparisons,
 					PrefixFunction:       make([]int, n),
-					HighlightPrefixIndex: i - m, // Подсвечиваем начало найденной подстроки
+					HighlightPrefixIndex: -1, // Убираем подсветку на последнем шаге
 				}
 				copy(step.PrefixFunction, maxPrefix)
 				steps = append(steps, step)
