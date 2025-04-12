@@ -10,14 +10,15 @@ import (
 
 // Step представляет один шаг выполнения алгоритма KMP
 type Step struct {
-	TextIndex      int    `json:"textIndex"`
-	PatternIndex   int    `json:"patternIndex"`
-	Match          bool   `json:"match"`
-	Shift          bool   `json:"shift"`
-	Status         string `json:"status"`
-	FailureValue   int    `json:"failureValue,omitempty"`
-	Comparisons    int    `json:"comparisons"`
-	PrefixFunction []int  `json:"prefixFunction,omitempty"` // Динамическая информация о совпадениях
+	TextIndex            int    `json:"textIndex"`
+	PatternIndex         int    `json:"patternIndex"`
+	Match                bool   `json:"match"`
+	Shift                bool   `json:"shift"`
+	Status               string `json:"status"`
+	FailureValue         int    `json:"failureValue,omitempty"`
+	Comparisons          int    `json:"comparisons"`
+	PrefixFunction       []int  `json:"prefixFunction,omitempty"` // Динамическая информация о совпадениях
+	HighlightPrefixIndex int    `json:"highlightPrefixIndex,omitempty"`
 }
 
 // KMPResult представляет результат работы алгоритма KMP с шагами
@@ -90,6 +91,9 @@ func searchKMP(text, pattern string) KMPResult {
 		// Копируем предыдущие максимальные значения
 		copy(step.PrefixFunction, maxPrefix)
 
+		// Устанавливаем HighlightPrefixIndex для текущей позиции текста
+		step.HighlightPrefixIndex = i // Подсвечиваем текущий индекс текста
+
 		if match {
 			// Обновляем максимальную длину совпадения для текущей позиции
 			if j+1 > maxPrefix[i] {
@@ -109,14 +113,15 @@ func searchKMP(text, pattern string) KMPResult {
 					}
 				}
 				step = Step{
-					TextIndex:      i - 1,
-					PatternIndex:   j - 1,
-					Match:          true,
-					Shift:          true,
-					Status:         "Pattern found! Shifting.",
-					FailureValue:   failure[j-1],
-					Comparisons:    comparisons,
-					PrefixFunction: make([]int, n),
+					TextIndex:            i - 1,
+					PatternIndex:         j - 1,
+					Match:                true,
+					Shift:                true,
+					Status:               "Pattern found! Shifting.",
+					FailureValue:         failure[j-1],
+					Comparisons:          comparisons,
+					PrefixFunction:       make([]int, n),
+					HighlightPrefixIndex: i - m, // Подсвечиваем начало найденной подстроки
 				}
 				copy(step.PrefixFunction, maxPrefix)
 				steps = append(steps, step)
@@ -125,21 +130,24 @@ func searchKMP(text, pattern string) KMPResult {
 		} else if j > 0 {
 			step.Status = "Mismatch. Consulting failure function."
 			step.FailureValue = failure[j-1]
+			step.HighlightPrefixIndex = i // Подсвечиваем текущий индекс при несоответствии
 			steps = append(steps, step)
 			j = failure[j-1]
 			step = Step{
-				TextIndex:      i,
-				PatternIndex:   j,
-				Match:          false,
-				Shift:          true,
-				Status:         "Shifting pattern.",
-				Comparisons:    comparisons,
-				PrefixFunction: make([]int, n),
+				TextIndex:            i,
+				PatternIndex:         j,
+				Match:                false,
+				Shift:                true,
+				Status:               "Shifting pattern.",
+				Comparisons:          comparisons,
+				PrefixFunction:       make([]int, n),
+				HighlightPrefixIndex: i, // Подсвечиваем текущий индекс
 			}
 			copy(step.PrefixFunction, maxPrefix)
 			steps = append(steps, step)
 		} else {
 			step.Status = "Mismatch. Shifting one position."
+			step.HighlightPrefixIndex = i // Подсвечиваем текущий индекс
 			steps = append(steps, step)
 			i++
 		}
