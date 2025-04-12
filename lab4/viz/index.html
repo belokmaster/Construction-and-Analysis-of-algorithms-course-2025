@@ -79,12 +79,13 @@
         }
         .canvas-container {
             width: 100%;
-            overflow-x: auto;
+            overflow-x: auto; /* Добавляем горизонтальную прокрутку */
             margin-bottom: 20px;
             border: 1px solid #ccc;
             background-color: #fff;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+        /* Убираем text-container, так как прокрутка теперь на canvas-container */
         canvas {
             display: block;
             background-color: #fff;
@@ -122,9 +123,10 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            overflow-x: auto;
+            overflow-x: auto; /* Добавляем горизонтальную прокрутку */
             width: 100%;
             padding-bottom: 5px;
+            white-space: nowrap; /* Запрещаем перенос текста */
         }
         .prefix-box {
             width: 35px;
@@ -248,15 +250,15 @@
             const container = document.querySelector('.canvas-container');
             const textInput = document.getElementById("text").value;
             const patternInput = document.getElementById("pattern").value;
-            
+
             // Рассчитываем необходимую ширину canvas
             const maxLength = Math.max(textInput.length, patternInput.length);
             const requiredWidth = MARGIN_X * 2 + maxLength * BOX_WIDTH;
-            
+
             // Устанавливаем размеры canvas
             canvas.width = Math.max(requiredWidth, container.clientWidth);
             canvas.height = 220;
-            
+
             // Масштабирование для HiDPI дисплеев
             const dpr = window.devicePixelRatio || 1;
             const rect = canvas.getBoundingClientRect();
@@ -377,7 +379,7 @@
                     wrapper.style.flexDirection = "column";
                     wrapper.style.alignItems = "center";
                     wrapper.style.marginRight = "5px";
-                    
+
                     const box = document.createElement("div");
                     box.classList.add("prefix-box");
                     box.textContent = value;
@@ -395,14 +397,14 @@
                     indexLabel.classList.add("prefix-index");
                     indexLabel.textContent = index;
                     box.appendChild(indexLabel);
-                    
+
                     // Добавляем подпись индекса под квадратиком
                     const bottomIndexLabel = document.createElement("div");
                     bottomIndexLabel.style.fontSize = "12px";
                     bottomIndexLabel.style.color = "#777";
                     bottomIndexLabel.style.marginTop = "2px";
                     bottomIndexLabel.textContent = index;
-                    
+
                     wrapper.appendChild(box);
                     wrapper.appendChild(bottomIndexLabel);
                     prefixContainer.appendChild(wrapper);
@@ -427,95 +429,94 @@
                 setTimeout(() => {
                     if (currentStep < steps.length) {
                         animationId = requestAnimationFrame(animate);
-                    }
-                }, delay);
+                    }}, delay);
+                }
             }
-        }
 
-        function startAnimation() {
-            // Если шаги еще не загружены или анимация завершена
-            if (steps.length === 0 || currentStep >= steps.length) {
-                const textInput = document.getElementById("text").value;
-                const patternInput = document.getElementById("pattern").value;
+            function startAnimation() {
+                // Если шаги еще не загружены или анимация завершена
+                if (steps.length === 0 || currentStep >= steps.length) {
+                    const textInput = document.getElementById("text").value;
+                    const patternInput = document.getElementById("pattern").value;
 
-                // Обновляем размер canvas перед началом анимации
-                resizeCanvas();
+                    // Обновляем размер canvas перед началом анимации
+                    resizeCanvas();
 
-                fetch('/kmp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: textInput, pattern: patternInput })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        document.getElementById("status").textContent = `Error: ${data.error}`;
-                        return;
-                    }
+                    fetch('/kmp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: textInput, pattern: patternInput })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            document.getElementById("status").textContent = `Error: ${data.error}`;
+                            return;
+                        }
 
-                    text = textInput;
-                    pattern = patternInput;
-                    steps = data.steps;
-                    currentStep = 0;
+                        text = textInput;
+                        pattern = patternInput;
+                        steps = data.steps;
+                        currentStep = 0;
+                        isAnimating = true;
+                        if (animationId) cancelAnimationFrame(animationId);
+                        animate();
+                        document.getElementById("answer").textContent = data.positions.join(", ");
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        document.getElementById("status").textContent = "An error occurred.";
+                    });
+                } else {
+                    // Продолжаем анимацию с текущего шага
                     isAnimating = true;
                     if (animationId) cancelAnimationFrame(animationId);
                     animate();
-                    document.getElementById("answer").textContent = data.positions.join(", ");
-                })
-                .catch(err => {
-                    console.error(err);
-                    document.getElementById("status").textContent = "An error occurred.";
-                });
-            } else {
-                // Продолжаем анимацию с текущего шага
-                isAnimating = true;
-                if (animationId) cancelAnimationFrame(animationId);
-                animate();
+                }
             }
-        }
 
-        function pauseAnimation() {
-            isAnimating = false;
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-                animationId = null;
+            function pauseAnimation() {
+                isAnimating = false;
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
             }
-        }
 
-        function prevStep() {
-            pauseAnimation();
-            if (currentStep > 0) {
-                currentStep--;
-                drawTextAndPattern(currentStep);
+            function prevStep() {
+                pauseAnimation();
+                if (currentStep > 0) {
+                    currentStep--;
+                    drawTextAndPattern(currentStep);
+                }
             }
-        }
 
-        function nextStep() {
-            pauseAnimation();
-            if (currentStep < steps.length - 1) {
-                currentStep++;
-                drawTextAndPattern(currentStep);
+            function nextStep() {
+                pauseAnimation();
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    drawTextAndPattern(currentStep);
+                }
             }
-        }
 
-        function reset() {
-            document.getElementById("text").value = "aababcabcdabcdeabcdef";
-            document.getElementById("pattern").value = "abcdef";
-            document.getElementById("speed").value = "500";
-            speedLabel.textContent = "500 ms";
-            document.getElementById("status").textContent = "";
-            document.getElementById("answer").textContent = "";
-            document.getElementById("prefix-function-container").innerHTML = "";
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            pauseAnimation();
-            steps = [];
-            currentStep = 0;
+            function reset() {
+                document.getElementById("text").value = "aababcabcdabcdeabcdef";
+                document.getElementById("pattern").value = "abcdef";
+                document.getElementById("speed").value = "500";
+                speedLabel.textContent = "500 ms";
+                document.getElementById("status").textContent = "";
+                document.getElementById("answer").textContent = "";
+                document.getElementById("prefix-function-container").innerHTML = "";
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                pauseAnimation();
+                steps = [];
+                currentStep = 0;
+                updateStepCounter();
+                resizeCanvas();
+            }
+
+            // Initial step counter update
             updateStepCounter();
-            resizeCanvas();
-        }
-
-        // Initial step counter update
-        updateStepCounter();
-    </script>
-</body>
+        </script>
+    </body>
 </html>
