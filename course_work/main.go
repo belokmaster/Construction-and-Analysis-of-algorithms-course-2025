@@ -100,7 +100,8 @@ func searchKMP(text, pattern string) KMPResult {
 				maxPrefix[i] = j + 1
 			}
 			step.PrefixFunction[i] = maxPrefix[i]
-			step.Status = "Match. Advancing."
+			step.Status = fmt.Sprintf("Comparing text[%d]='%c' with pattern[%d]='%c': match found. Advancing to text[%d] and pattern[%d].",
+				i, text[i], j, pattern[j], i+1, j+1)
 			steps = append(steps, step)
 			i++
 			j++
@@ -112,13 +113,14 @@ func searchKMP(text, pattern string) KMPResult {
 						maxPrefix[k] = k - (i - m) + 1 // Длина совпадения от начала
 					}
 				}
-				// Не подсвечиваем последний шаг
+				// Шаг для полного совпадения
 				step = Step{
-					TextIndex:            i - 1,
-					PatternIndex:         j - 1,
-					Match:                true,
-					Shift:                true,
-					Status:               "Pattern found! Shifting.",
+					TextIndex:    i - 1,
+					PatternIndex: j - 1,
+					Match:        true,
+					Shift:        true,
+					Status: fmt.Sprintf("Full pattern match found at text index %d! Using failure function value %d to shift pattern to pattern[%d].",
+						i-j, failure[j-1], failure[j-1]),
 					FailureValue:         failure[j-1],
 					Comparisons:          comparisons,
 					PrefixFunction:       make([]int, n),
@@ -129,17 +131,19 @@ func searchKMP(text, pattern string) KMPResult {
 				j = failure[j-1]
 			}
 		} else if j > 0 {
-			step.Status = "Mismatch. Consulting failure function."
+			step.Status = fmt.Sprintf("Mismatch at text[%d]='%c' and pattern[%d]='%c'. Using failure function value %d to shift pattern to pattern[%d].",
+				i, text[i], j, pattern[j], failure[j-1], failure[j-1])
 			step.FailureValue = failure[j-1]
 			step.HighlightPrefixIndex = i // Подсвечиваем текущий индекс при несоответствии
 			steps = append(steps, step)
 			j = failure[j-1]
 			step = Step{
-				TextIndex:            i,
-				PatternIndex:         j,
-				Match:                false,
-				Shift:                true,
-				Status:               "Shifting pattern.",
+				TextIndex:    i,
+				PatternIndex: j,
+				Match:        false,
+				Shift:        true,
+				Status: fmt.Sprintf("Pattern shifted to align at pattern[%d] with text[%d]='%c' based on failure function.",
+					j, i, text[i]),
 				Comparisons:          comparisons,
 				PrefixFunction:       make([]int, n),
 				HighlightPrefixIndex: i, // Подсвечиваем текущий индекс
@@ -147,7 +151,8 @@ func searchKMP(text, pattern string) KMPResult {
 			copy(step.PrefixFunction, maxPrefix)
 			steps = append(steps, step)
 		} else {
-			step.Status = "Mismatch. Shifting one position."
+			step.Status = fmt.Sprintf("Mismatch at text[%d]='%c' and pattern[0]='%c'. No prefix to use, advancing to text[%d].",
+				i, text[i], pattern[0], i+1)
 			step.HighlightPrefixIndex = i // Подсвечиваем текущий индекс
 			steps = append(steps, step)
 			i++
